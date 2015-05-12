@@ -22,11 +22,11 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.EventContent.EventContentHeavyIons_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    annotation = cms.untracked.string('hiRecoDM nevts:10'),
+    annotation = cms.untracked.string('hiRecoDM nevts:6'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(6)
 )
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True)
@@ -104,8 +104,9 @@ process.baselineAna = cms.EDAnalyzer("SiStripBaselineAnalyzer",
         srcBaseline =  cms.InputTag('siStripZeroSuppression','BADAPVBASELINEVirginRaw'),
         srcBaselinePoints =  cms.InputTag('siStripZeroSuppression','BADAPVBASELINEPOINTSVirginRaw'),
         srcAPVCM  =  cms.InputTag('siStripZeroSuppression','APVCMVirginRaw'),
-        srcProcessedRawDigi =  cms.InputTag('siStripZeroSuppression','VirginRaw'),
-        nModuletoDisplay = cms.uint32(10000),
+        srcProcessedRawDigi =  cms.InputTag('siStripDigis','VirginRaw'),
+        #srcProcessedRawDigi =  cms.InputTag('siStripZeroSuppression','VirginRaw'),
+        nModuletoDisplay = cms.uint32(100000),
         plotClusters = cms.bool(True),
         plotBaseline = cms.bool(True),
         plotBaselinePoints = cms.bool(True),

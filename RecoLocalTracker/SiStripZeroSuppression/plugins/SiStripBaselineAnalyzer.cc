@@ -215,6 +215,9 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
    edm::Handle<edm::DetSetVector<SiStripProcessedRawDigi> > moduleBaseline;
    if(plotBaseline_) e.getByLabel(srcBaseline_, moduleBaseline); 
 
+   edm::Handle<edm::DetSetVector<SiStripProcessedRawDigi> > moduleCM2;
+   if(plotBaseline_) e.getByLabel(srcAPVCM_, moduleCM2); 
+   
    edm::Handle<edm::DetSetVector<SiStripDigi> > moduleBaselinePoints;
    if(plotBaselinePoints_) e.getByLabel(srcBaseline_, moduleBaselinePoints); 
    
@@ -236,30 +239,31 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
 
    edm::DetSetVector<SiStripProcessedRawDigi>::const_iterator itDSBaseline;
    if(plotBaseline_) itDSBaseline = moduleBaseline->begin();
+   edm::DetSetVector<SiStripProcessedRawDigi>::const_iterator itDSBaseline2;
+   if(plotBaseline_) itDSBaseline2 = moduleCM2->begin();
    edm::DetSetVector<SiStripRawDigi>::const_iterator itRawDigis = moduleRawDigi->begin();
    
    uint32_t NBabAPVs = moduleRawDigi->size();     
    std::cout<< "Number of module with HIP in this event: " << NBabAPVs << std::endl;
    h1BadAPVperEvent_->Fill(NBabAPVs);
-   
+  
    for (; itRawDigis != moduleRawDigi->end(); ++itRawDigis) {
       if(actualModule_ > nModuletoDisplay_) return;
       uint32_t detId = itRawDigis->id;
 	  
+      bool hasBadBaseline = true;
       if(plotBaseline_){
 	//std::cout << "bas id: " << itDSBaseline->id << " raw id: " << detId << std::endl;
 	if(itDSBaseline->id != detId){
-		std::cout << "Collections out of Synch. Something of fishy is going on ;-)" << std::endl;
-		return;
+		hasBadBaseline = false;
 	}	  
       }
-      
-    
+      std::cout << detId << " " << itDSBaseline->id << " " << itDSBaseline2->id << " "<<hasBadBaseline<<std::endl; 
       actualModule_++;
       edm::RunNumber_t const run = e.id().run();
       edm::EventNumber_t const event = e.id().event();
-      //std::cout << "processing module N: " << actualModule_<< " detId: " << detId << " event: "<< event << std::endl; 
-	 
+      if(hasBadBaseline) std::cout << run << " " << event << " " << detId << std::endl;
+      //std::cout << "processing module N: " << actualModule_<< " detId: " << detId << " event: "<< event << std::endl;  
 	  
       edm::DetSet<SiStripRawDigi>::const_iterator itRaw = itRawDigis->begin(); 
       bool restAPV[6] = {0,0,0,0,0,0};
@@ -289,14 +293,19 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       
       sprintf(detIds,"%ul", detId);
       sprintf(evs,"%llu", event);
+
+//grabbing event nuber 6
+      if(event != 1573435) return;
+
+
       sprintf(runs,"%u", run);
       char* dHistoName = Form("Id:%s_run:%s_ev:%s",detIds, runs, evs);
       h1ProcessedRawDigis_ = sdProcessedRawDigis_.make<TH1F>(dHistoName,dHistoName, bins, minx, maxx); 
       h1RawDigis_ = sdRawDigis_.make<TH1F>(dHistoName,dHistoName, bins, minx, maxx);     
 
       edm::DetSet<SiStripRawDigi>::const_iterator itRaw2 = itRawDigis->begin(); 
-      int strip2 =0;
-      for(;itRaw2 != itRawDigis->end(); ++itRaw2, ++strip2){
+      int strip2=0;
+      for(; itRaw2 != itRawDigis->end(); ++itRaw2, ++strip2){
             h1RawDigis_->Fill(strip2,itRaw2->adc());
       }
  
@@ -309,6 +318,12 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	h1Baseline_->SetLineWidth(2);
 	h1Baseline_->SetLineStyle(2);
 	h1Baseline_->SetLineColor(2);
+      }
+
+      edm::DetSet<SiStripProcessedRawDigi>::const_iterator  itBaseline2 = itDSBaseline2->begin();
+      for(int strip3 = 0; itBaseline2 != itDSBaseline2->end() && strip3<maxx;  ++strip3){
+            h1Baseline_->Fill(strip3,itBaseline2->adc());
+            if(strip3%128==127) ++itBaseline2;
       }
 
       if(plotClusters_){
@@ -337,9 +352,9 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       
       std::vector<int16_t> ProcessedRawDigis(itRawDigis->size());
       subtractorPed_->subtract( *itRawDigis, ProcessedRawDigis);
-
+ 
       edm::DetSet<SiStripProcessedRawDigi>::const_iterator  itBaseline;
-      if(plotBaseline_) itBaseline = itDSBaseline->begin(); 
+      if(plotBaseline_) itBaseline = itDSBaseline->begin();
       std::vector<int16_t>::const_iterator itProcessedRawDigis;
 	  	  
       if(minAPVRes==7) minAPVRes=0;
@@ -348,15 +363,18 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	if(restAPV[strip/128]){
 	  float adc = *(itProcessedRawDigis+minAPVRes*128);
 	  h1ProcessedRawDigis_->Fill(strip, adc);
-	  if(plotBaseline_){
-	    h1Baseline_->Fill(strip, (itBaseline+minAPVRes*128)->adc()); 
+	  if(plotBaseline_ && hasBadBaseline){
+	    //h1Baseline_->Fill(strip, (itBaseline+minAPVRes*128)->adc()); 
 	    ++itBaseline;
-	  }
+          }
 	 }
 	++strip;
        }	  
        
-      if(plotBaseline_) ++itDSBaseline; 
+      if(plotBaseline_ && hasBadBaseline){ 
+        ++itDSBaseline;
+      }
+      ++itDSBaseline2;
       if(plotClusters_){
 	  edmNew::DetSetVector<SiStripCluster>::const_iterator itClusters = clusters->begin();
 	  for ( ; itClusters != clusters->end(); ++itClusters ){

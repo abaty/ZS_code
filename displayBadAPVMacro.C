@@ -31,7 +31,7 @@ public:
        
     TIter nextkey(gDirectory->GetListOfKeys());
     TKey *key ;
-    while ((key = (TKey*)nextkey()) && NEntries<1000) {
+    while ((key = (TKey*)nextkey()) && NEntries<100000) {
       NEntries++;
       TObject *obj = key->ReadObj();
       std::cout << " object " << obj->GetName() << std::endl;
