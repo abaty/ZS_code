@@ -22,11 +22,11 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load('Configuration.EventContent.EventContentHeavyIons_cff')
 
 process.configurationMetadata = cms.untracked.PSet(
-    annotation = cms.untracked.string('hiRecoDM nevts:6'),
+    annotation = cms.untracked.string('hiRecoDM nevts:30'),
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(6)
+    input = cms.untracked.int32(30)
 )
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True)

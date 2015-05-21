@@ -111,6 +111,8 @@ class SiStripBaselineAnalyzer : public edm::EDAnalyzer {
 	  TH1F* h1Clusters_;
           TH1F* h1APVCM_;
           TH1F* h1Pedestals_;	  
+          TH1D* h1RawADCs_;	  
+          TH1D* h1ProcessedADCs_;
 	  
 	  TCanvas* Canvas_;
 	  std::vector<TH1F> vProcessedRawDigiHisto_;
@@ -156,16 +158,22 @@ SiStripBaselineAnalyzer::SiStripBaselineAnalyzer(const edm::ParameterSet& conf){
   h1Pedestals_->SetLineWidth(2);
   h1Pedestals_->SetLineStyle(2);
 
+  h1RawADCs_ = fs_->make<TH1D>("RawADCs","RawADCs", 1024, 0, 1024);
+  h1RawADCs_->SetXTitle("ADC");
+  h1RawADCs_->SetYTitle("Entries");
+  h1RawADCs_->SetLineWidth(2);
+  h1RawADCs_->SetLineStyle(2);
   
- 
+  h1ProcessedADCs_ = fs_->make<TH1D>("ProcessedADCs","ProcessedADCs", 256, 0, 256);
+  h1ProcessedADCs_->SetXTitle("ADC");
+  h1ProcessedADCs_->SetYTitle("Entries");
+  h1ProcessedADCs_->SetLineWidth(2);
+  h1ProcessedADCs_->SetLineStyle(2);
 }
 
 
 SiStripBaselineAnalyzer::~SiStripBaselineAnalyzer()
 {
- 
-   
-
 }
 
 void
@@ -206,6 +214,17 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
    
    if(!plotRawDigi_) return;
    subtractorPed_->init(es);
+   
+//portion for huffman code
+   edm::Handle<edm::DetSetVector<SiStripRawDigi> > moduleRAWADCs;
+   e.getByLabel(srcProcessedRawDigi_,moduleRAWADCs);
+   edm::DetSetVector<SiStripRawDigi>::const_iterator itRAWADCs =moduleRAWADCs->begin();
+   for (; itRAWADCs != moduleRAWADCs->end(); ++itRAWADCs){  
+     edm::DetSet<SiStripRawDigi>::const_iterator  itRAWADC2= itRAWADCs->begin();
+     //for(;itRAWADC2 != itRAWADCs->end(); ++itRAWADC2) h1RawADCs_->Fill(itRAWADC2->adc()/4);
+     for(;itRAWADC2 != itRAWADCs->end(); ++itRAWADC2) h1RawADCs_->Fill(itRAWADC2->adc());
+   }
+   
    
    
  
@@ -258,7 +277,7 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
 		hasBadBaseline = false;
 	}	  
       }
-      std::cout << detId << " " << itDSBaseline->id << " " << itDSBaseline2->id << " "<<hasBadBaseline<<std::endl; 
+
       actualModule_++;
       edm::RunNumber_t const run = e.id().run();
       edm::EventNumber_t const event = e.id().event();
@@ -295,7 +314,7 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       sprintf(evs,"%llu", event);
 
 //grabbing event nuber 6
-      if(event != 1573435) return;
+      //if(event != 1573435) return;
 
 
       sprintf(runs,"%u", run);
@@ -363,8 +382,9 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
 	if(restAPV[strip/128]){
 	  float adc = *(itProcessedRawDigis+minAPVRes*128);
 	  h1ProcessedRawDigis_->Fill(strip, adc);
+          h1ProcessedADCs_->Fill(adc); 
 	  if(plotBaseline_ && hasBadBaseline){
-	    //h1Baseline_->Fill(strip, (itBaseline+minAPVRes*128)->adc()); 
+	    h1Baseline_->SetBinContent(strip, (itBaseline+minAPVRes*128)->adc()); 
 	    ++itBaseline;
           }
 	 }
