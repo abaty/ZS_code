@@ -261,12 +261,11 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       uint32_t detId = itRawDigis->id;
 	  
       if(plotBaseline_){
-	std::cout << "bas id: " << itDSBaseline->id << " raw id: " << detId << std::endl;
+//	std::cout << "bas id: " << itDSBaseline->id << " raw id: " << detId << std::endl;
 	if(itDSBaseline->id != detId){
-      		std::cout << "Collections out of Synch. Something of fishy is going on ;-)" << std::endl;
 		itDSBaseline = moduleBaseline->find(detId);
                 if(itDSBaseline->id != detId){ if(plotBaseline_)itDSBaseline++; continue;}
-                else std::cout << "Resynched..." << std::endl;
+//                else std::cout << "Resynched..." << std::endl;
 	}	  
       }
       
